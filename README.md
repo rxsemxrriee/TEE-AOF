@@ -1,23 +1,49 @@
-# TEE-AOF
-Interactive buffet ordering website
+### 🏗 Project Structure
+
+```text
 buffet-project/
-├── backend/
-    ├── app/
-    │   ├── api/                # API route handlers (Controllers)
-    │   │   ├── orders.py
-    │   │   └── menu.py
-    │   ├── core/               # Security, Auth, and Global Config
-    │   ├── models/             # OOP Classes (Database Blueprints)
-    │   │   ├── base.py         # Base Class for inheritance
-    │   │   ├── item.py         # MenuItem, Dish, Drink classes
-    │   │   └── order.py        # Order and Table classes
-    │   ├── schemas/            # Pydantic models (Data Validation)
-    │   ├── services/           # Business Logic (Calculations, logic)
-    │   └── main.py             # Entry point
-├── tests/                  # Unit tests for QA
-├── requirements.txt        # Python dependencies
-└── .env                    # Environment variables (DB URLs, etc.)
-├── frontend/               # React (Vite/CRA) code
-├── docs/                   # API specs, DB diagrams, and meeting notes
-├── .gitignore
-└── README.md               # Setup instructions for the team
+├── backend/                # Python API Service
+│   ├── app/
+│   │   ├── api/            # Route handlers
+│   │   ├── models/         # OOP Classes (The "Blueprints")
+│   │   ├── schemas/        # Data validation (Pydantic)
+│   │   └── main.py         # Entry point
+│   └── requirements.txt
+├── frontend/               # React Client
+│   ├── src/
+│   │   ├── components/     # Reusable UI (Atomic Design)
+│   │   ├── hooks/          # Custom API logic
+│   │   └── pages/          # Menu & Admin Views
+│   └── package.json
+└── docs/                   # API Spec & DB Diagrams
+```
+<hr \>
+
+## Setup
+## Clone the repository
+
+```
+git clone https://github.com/rxsemxrriee/TEE-AOF && cd TEE-AOF
+```
+## Backend setup
+```
+cd backend
+python -m venv venv
+source venv/bin/activate  # For Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+## Frontend setup
+```
+cd frontend
+npm install
+npm run dev
+```
+
+<hr \>
+
+## Techstacks:
+<div style="display: flex; align-items: flex-start;"><h1>React(frontend)</h1><img src="https://techstack-generator.vercel.app/react-icon.svg" alt="icon" width="65" height="65" /></div>
+<div style="display: flex; align-items: flex-start;"><h1>FastAPI(backend entry point)</h1><img src="https://techstack-generator.vercel.app/python-icon.svg" alt="icon" width="65" height="65" /></div>
+<div style="display: flex; align-items: flex-start;"><h1>Github(version control)</h1><img src="https://techstack-generator.vercel.app/github-icon.svg" alt="icon" width="65" height="65" /></div>
+<div style="display: flex; align-items: flex-start;"><h1>MySQL(Database)</h1><img src="https://techstack-generator.vercel.app/mysql-icon.svg" alt="icon" width="65" height="65" /></div>
