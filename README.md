@@ -1,21 +1,17 @@
 ### 🏗 Project Structure
 
 ```text
-buffet-project/
-├── backend/                # Python API Service
-│   ├── app/
-│   │   ├── api/            # Route handlers
-│   │   ├── models/         # OOP Classes (The "Blueprints")
-│   │   ├── schemas/        # Data validation (Pydantic)
-│   │   └── main.py         # Entry point
-│   └── requirements.txt
-├── frontend/               # React Client
+TEE-AOF/
+├── backend/                # Python (FastAPI/Flask)
+│   ├── main.py             # Entry point
+│   ├── requirements.txt    # Python dependencies
+│   └── venv/               # Virtual environment
+├── frontend/               # React (Vite)
 │   ├── src/
-│   │   ├── components/     # Reusable UI (Atomic Design)
-│   │   ├── hooks/          # Custom API logic
-│   │   └── pages/          # Menu & Admin Views
-│   └── package.json
-└── docs/                   # API Spec & DB Diagrams
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.ts
+└── .gitignore              # Ignores both node_modules and venv
 ```
 <hr \>
 
