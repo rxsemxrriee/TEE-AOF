@@ -1,4 +1,4 @@
-### 🏗 Project Structure
+###  Project Structure
 
 ```text
 TEE-AOF/
@@ -36,7 +36,11 @@ npm run dev
 <hr \>
 
 ## Techstacks:
-<div style="display: flex; align-items: flex-start;"><h1>React(frontend)</h1><img src="https://techstack-generator.vercel.app/react-icon.svg" alt="icon" width="65" height="65" /></div>
-<div style="display: flex; align-items: flex-start;"><h1>FastAPI(backend entry point)</h1><img src="https://techstack-generator.vercel.app/python-icon.svg" alt="icon" width="65" height="65" /></div>
-<div style="display: flex; align-items: flex-start;"><h1>Github(version control)</h1><img src="https://techstack-generator.vercel.app/github-icon.svg" alt="icon" width="65" height="65" /></div>
-<div style="display: flex; align-items: flex-start;"><h1>MySQL(Database)</h1><img src="https://techstack-generator.vercel.app/mysql-icon.svg" alt="icon" width="65" height="65" /></div>
+```
+Frontend: React.tsx
+Backend: Golang
+Database: MySQL
+Realtime: Websockets
+```
+
+### มีอะไรให้ช่วยกัน โปรดปักไว้ที่ issue เดี๋ยวเข้าไปช่วยอ่าน + แผนงานปักไว้ในนั้นได้ จะได้เข้าใจว่าต้องทำอะไรบ้าง
