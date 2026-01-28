@@ -2,16 +2,16 @@
 
 ```text
 TEE-AOF/
-├── backend/                # Python (FastAPI/Flask)
-│   ├── main.py             # Entry point
-│   ├── requirements.txt    # Python dependencies
-│   └── venv/               # Virtual environment
+├── backend/                
+│   ├── main.go             # Entry point
+│   ├── go.mod    
+│   └── go.sum
 ├── frontend/               # React (Vite)
 │   ├── src/
 │   ├── index.html
 │   ├── package.json
 │   └── vite.config.ts
-└── .gitignore              # Ignores both node_modules and venv
+└── .gitignore              # Ignores both node_modules 
 ```
 <hr \>
 
@@ -24,10 +24,7 @@ git clone https://github.com/rxsemxrriee/TEE-AOF && cd TEE-AOF
 ## Backend setup
 ```
 cd backend
-python -m venv venv
-source venv/bin/activate  # For Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload
+go run main.go
 ```
 ## Frontend setup
 ```
