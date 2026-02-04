@@ -1,7 +1,7 @@
 import './App.css'
 import { useEffect,useState } from 'react';
 
-//ΑPI โปรดอย่าแตะต้องถ้าไม่จำเป็น
+//golang connectionโปรดอย่าแตะต้องถ้าไม่จำเป็น
 export const Fetch = () => {
   const [message, setMessage] = useState('Loading...');
 
@@ -11,7 +11,7 @@ export const Fetch = () => {
       .then((data) => setMessage(data.message))
   }, []);
   return (
-    <div className="App">
+    <div >
       <h1>TEE-AOF Project</h1>
       <p>Backend Status: <strong>{message}</strong></p>
 
@@ -23,31 +23,24 @@ export const Fetch = () => {
   );
 }
 //แถบนำทางข้างบน
-export const Nav = () => {
-  return <nav className='navbar'>
-    <div className='navbutton' onClick={()=>{ location.href='index.html'}}>
+export const Topnavbar = () => {
+  return <nav>
+    <div  onClick={()=>{ location.href='index.html'}}>
       <p>Home Page</p> 
     </div>
-    <div className='navbutton' onClick={() => { location.href ='order.html'}}>
+    <div  onClick={() => { location.href ='order.html'}}>
       <p>Order</p>
       </div>
-    <div className='navbutton' onClick={() => { location.href ='https://www.instagram.com/eight_._ten'}}>
+    <div  onClick={() => { location.href ='https://www.instagram.com/eight_._ten'}}>
       <p>Contact</p>
     </div>
   </nav>
 }
 //หน้าหลักของเว็บ
-export const Main = () => {
-  return <div className='main'>
-    <Log />
-    <p>hello</p>
-    <Fetch/>
-    </div>
-}
 //ลองปุ่ม แก้ได้ตามชอบ
 export const Log = () => {
     const [count, setCount] = useState(0)
-  return (<div className='card'>
+  return (<div >
     <button onClick={()=>{setCount(count+1), console.log(count+1)}}>{count}</button>
   </div>);
 };
@@ -56,16 +49,33 @@ export const Log = () => {
 export const Order = () => {
   const [ordernum, ordercount] = useState(0)
   return (
-    <div className='order'>
+    <div >
       <button onClick={()=>{ordercount(ordernum+1)}}>จำนวน:{ordernum}</button>
     </div>
   )
 }
 //หน้าorder
 export const Order_main = ()=>{
-  return <div className='main'>
+  return <div>
     <Order/>
     <p>hello</p>
     <Fetch />
   </div>
+}
+
+
+export const Main = () => {
+  return (
+    <div className='main'>
+      {/* TEST CODE START */}
+      <div className="bg-red-500 text-white text-4xl p-10 font-bold border-4 border-black">
+        IF THIS IS RED AND BIG, TAILWIND IS WORKING
+      </div>
+      {/* TEST CODE END */}
+
+      <Log />
+      <p>hello</p>
+      <Fetch />
+    </div>
+  )
 }
