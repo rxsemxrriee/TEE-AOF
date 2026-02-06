@@ -1,6 +1,6 @@
 import './App.css'
 import { useEffect,useState } from 'react';
-
+import Popup from 'reactjs-popup';
 //golang connectionโปรดอย่าแตะต้องถ้าไม่จำเป็น
 export const Fetch = () => {
   const [message, setMessage] = useState('Loading...');
@@ -12,10 +12,8 @@ export const Fetch = () => {
   }, []);
   return (
     <div >
-      <h1>TEE-AOF Project</h1>
       <p>Backend Status: <strong>{message}</strong></p>
 
-      {/* This is the button you were working on earlier */}
       <button onClick={() => console.log('hello')}>
         Check Console
       </button>
@@ -24,15 +22,21 @@ export const Fetch = () => {
 }
 //แถบนำทางข้างบน
 export const Topnavbar = () => {
-  return <nav>
-    <div  onClick={()=>{ location.href='index.html'}}>
-      <p>Home Page</p> 
+  return <nav className='Navbar'>
+    <div className='navleft'>
+      <img src='teeaof1.png' className='logoimg' onClick={()=>{location.href='index.html'}}></img>
     </div>
-    <div  onClick={() => { location.href ='order.html'}}>
-      <p>Order</p>
+    <div className='navright'>
+    <div className='navbutton' onClick={() => { location.href ='order.html'}}>
+      <p>Menu</p>
       </div>
-    <div  onClick={() => { location.href ='https://www.instagram.com/eight_._ten'}}>
+    <div  className='navbutton' onClick={()=>{ location.href='index.html'}}>
+      <p>About us</p> 
+    </div>
+    <div className='navbutton' onClick={() => { location.href ='https://www.instagram.com/eight_._ten'}}>
       <p>Contact</p>
+    </div>
+    <img src='cart100.png' onClick={()=>{location.href='checkout.html'}}></img>
     </div>
   </nav>
 }
@@ -40,7 +44,7 @@ export const Topnavbar = () => {
 //ลองปุ่ม แก้ได้ตามชอบ
 export const Log = () => {
     const [count, setCount] = useState(0)
-  return (<div >
+  return (<div>
     <button onClick={()=>{setCount(count+1), console.log(count+1)}}>{count}</button>
   </div>);
 };
@@ -56,26 +60,36 @@ export const Order = () => {
 }
 //หน้าorder
 export const Order_main = ()=>{
-  return <div>
-    <Order/>
-    <p>hello</p>
+  return <div className='frontbody'>
+    <h1>สั่งอาหาร</h1>
+    <div className='foodcontainer'>
+    <Menulist/>
+    <Menulist/>
+    <Menulist/>
+    </div>
     <Fetch />
+  </div>
+}
+//body หน้า index
+export const Frontpagebodycontent =  () => {
+  return <div className='frontbody'>
+      <h1>TEE AOF</h1>
+      <p>สุกี้ที่อร่อยที่สุดในอุบล</p>
+      <div className='gotoorder' onClick={()=>{location.href='order.html'}}>ไปสั่งเลย</div>
+  </div>
+}
+
+export const Menulist= () => {
+  const [popupstate,setpopupstate] = useState(false)
+  if (popupstate == true) {
+    return <div className='popup'>
+      <p>hello</p>
+    </div>
+  }
+  return <div className='menuselect'>
+    <img src='mhoo.png' onClick={()=>{setpopupstate(true)}}></img>
+    <p>หมูสไลด์</p>
   </div>
 }
 
 
-export const Main = () => {
-  return (
-    <div className='main'>
-      {/* TEST CODE START */}
-      <div className="bg-red-500 text-white text-4xl p-10 font-bold border-4 border-black">
-        IF THIS IS RED AND BIG, TAILWIND IS WORKING
-      </div>
-      {/* TEST CODE END */}
-
-      <Log />
-      <p>hello</p>
-      <Fetch />
-    </div>
-  )
-}
