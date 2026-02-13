@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
+    allowedHosts: [
+      'thaddeus-nonvernacular-trippingly.ngrok-free.dev'
+    ],
     proxy: {
       '/api': 'http://localhost:8000', // Redirects frontend /api calls to backend
     },
