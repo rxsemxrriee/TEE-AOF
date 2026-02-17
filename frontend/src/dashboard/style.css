@@ -1,0 +1,31 @@
+body {background-color: rgb(193, 193, 193);}
+body {margin: 25px; }
+
+table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+
+.navbar{
+    top: 0;
+    background-color: rgb(193, 193, 193);
+    justify-content: space-between;
+    display: flex;
+}
+
+.bg-even {
+    background-color: rgb(193, 193, 193); 
+}
+
+.bg-odd {
+    background-color: rgb(170, 170, 170); 
+}
