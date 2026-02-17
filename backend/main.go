@@ -31,6 +31,7 @@ func main() {
 	r.GET("/api/sessions", getAllSessions)
 	r.GET("/api/sessions/:id", getSession)
 	r.POST("/api/sessions/:id/join", joinSession)
+	r.DELETE("/api/sessions/:id", deleteSession)
 
 	// Order management
 	r.POST("/api/sessions/:id/orders", addOrder)
@@ -66,6 +67,7 @@ type Order struct {
 // Session struct
 type Session struct {
 	ID        string   `json:"id"`
+	TableNo   string   `json:"tableNo"`
 	Users     []string `json:"users"`
 	Orders    []Order  `json:"orders"`
 	IsActive  bool     `json:"isActive"`
@@ -87,8 +89,15 @@ func createSession(c *gin.Context) {
 	// For simplicity, we'll use a 6-digit random number
 	id := fmt.Sprintf("%06d", rand.Intn(1000000))
 
+	var req struct {
+		TableNo string `json:"tableNo"`
+	}
+	// Attempt to bind JSON, but ignore error if body is empty (optional)
+	c.ShouldBindJSON(&req)
+
 	session := &Session{
 		ID:        id,
+		TableNo:   req.TableNo,
 		Users:     []string{},
 		Orders:    []Order{},
 		IsActive:  true,
@@ -157,6 +166,20 @@ func joinSession(c *gin.Context) {
 	c.JSON(http.StatusOK, session)
 }
 
+func deleteSession(c *gin.Context) {
+	id := c.Param("id")
+	mu.Lock()
+	defer mu.Unlock()
+
+	if _, exists := sessions[id]; !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Session not found"})
+		return
+	}
+
+	delete(sessions, id)
+	c.JSON(http.StatusOK, gin.H{"message": "Session deleted"})
+}
+
 func addOrder(c *gin.Context) {
 	id := c.Param("id")
 	var order Order
@@ -180,6 +203,11 @@ func addOrder(c *gin.Context) {
 	}
 	// Ensure SessionID is set
 	order.SessionID = id
+	// Inherit TableNo from Session if available
+	if session.TableNo != "" {
+		order.TableNo = session.TableNo
+	}
+
 	if order.Timestamp == "" {
 		order.Timestamp = time.Now().Format("15:04:05")
 	}

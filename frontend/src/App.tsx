@@ -20,23 +20,54 @@ export const Fetch = () => {
     </div>
   );
 }
+// Helper to get session ID from URL or LocalStorage
+const getSessionId = () => {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('session') || localStorage.getItem('currentSessionId');
+};
+
+// Helper to navigate with session ID
+const navigateTo = (path: string) => {
+  const sessionId = getSessionId();
+  if (sessionId) {
+    if (path.includes('?')) {
+      location.href = `${path}&session=${sessionId}`;
+    } else {
+      location.href = `${path}?session=${sessionId}`;
+    }
+  } else {
+    location.href = path;
+  }
+};
+
+// Helper to check if session is valid
+const checkSessionValidity = async (sessionId: string) => {
+  try {
+    const response = await fetch(`http://localhost:8080/api/sessions/${sessionId}`);
+    return response.ok;
+  } catch (error) {
+    console.error("Error checking session:", error);
+    return false;
+  }
+};
+
 //แถบนำทางข้างบน
 export const Topnavbar = () => {
   return <nav className='Navbar'>
     <div className='navleft'>
-      <img src='img/teeaof1.png' className='logoimg' onClick={() => { location.href = 'index.html' }}></img>
+      <img src='img/teeaof1.png' className='logoimg' onClick={() => navigateTo('index.html')}></img>
     </div>
     <div className='navright'>
-      <div className='navbutton' onClick={() => { location.href = 'order.html' }}>
+      <div className='navbutton' onClick={() => navigateTo('order.html')}>
         <p>Menu</p>
       </div>
-      <div className='navbutton' onClick={() => { location.href = 'index.html' }}>
+      <div className='navbutton' onClick={() => navigateTo('index.html')}>
         <p>About us</p>
       </div>
       <div className='navbutton' onClick={() => { location.href = 'https://www.instagram.com/eight_._ten' }}>
         <p>Contact</p>
       </div>
-      <img src='img/cart100.png' onClick={() => { location.href = 'checkout.html' }}></img>
+      <img src='img/cart100.png' onClick={() => navigateTo('checkout.html')}></img>
     </div>
   </nav>
 }
@@ -68,6 +99,30 @@ export const Order_main = () => {
 
   const [cartUpdate, setCartUpdate] = useState(0);
   const updateCart = () => setCartUpdate(prev => prev + 1);
+
+  useEffect(() => {
+    const sessionId = getSessionId();
+    if (!sessionId) {
+      alert("No active session found. Returning to Home.");
+      location.href = 'index.html';
+      return;
+    }
+
+    const checkStatus = async () => {
+      const isValid = await checkSessionValidity(sessionId);
+      if (!isValid) {
+        alert("This session has been ended by the moderator.");
+        localStorage.removeItem('currentSessionId'); // Clear invalid session
+        localStorage.removeItem('cart'); // Optional: Clear cart
+        location.href = 'index.html';
+      }
+    };
+
+    checkStatus(); // Check immediately
+    const interval = setInterval(checkStatus, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   return <div className='frontbody'>
     <h1>สั่งอาหาร</h1>
@@ -102,7 +157,7 @@ export const Order_main = () => {
     </div>
     {
       Confirmed_order.size > 0 && (
-        <div className='floating-btn' onClick={() => { location.href = 'checkout.html' }}>
+        <div className='floating-btn' onClick={() => navigateTo('checkout.html')}>
           <img src='img/cart100.png' style={{ width: '30px', height: '30px', marginRight: '10px' }} />
           <p style={{ margin: 0 }}>Checkout ({Confirmed_order.size})</p>
         </div>
@@ -135,17 +190,26 @@ export const Frontpagebodycontent = () => {
 
       alert(`Joined session ${sessionId} as ${username}`);
       localStorage.setItem('currentSessionId', sessionId);
-      location.href = 'order.html'; // Redirect to order page after joining
+      // Redirect with session ID param
+      location.href = `order.html?session=${sessionId}`;
     } catch (error) {
       alert('Failed to join session. Please check the ID.');
       console.error(error);
     }
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionParam = params.get('session');
+    if (sessionParam) {
+      setSessionId(sessionParam);
+    }
+  }, []);
+
   return <div className='frontbody'>
     <h1>TEE AOF</h1>
     <p>สุกี้ที่อร่อยที่สุดในอุบล</p>
-    <div className='gotoorder' onClick={() => { location.href = 'order.html' }}>ไปสั่งเลย</div>
+    <div className='gotoorder' onClick={() => navigateTo('order.html')}>ไปสั่งเลย</div>
 
     <div style={{ marginTop: '30px', padding: '20px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '10px' }}>
       <h3>Join a Session</h3>
@@ -171,6 +235,7 @@ export const Frontpagebodycontent = () => {
 export const Moderator_main = () => {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [tableNo, setTableNo] = useState('');
 
   const fetchSessions = async () => {
     try {
@@ -188,13 +253,22 @@ export const Moderator_main = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const [createdLink, setCreatedLink] = useState('');
+
   const createSession = async () => {
     console.log("createSession called");
+    if (!tableNo) {
+      alert("Please enter a table number");
+      return;
+    }
     setLoading(true);
+    setCreatedLink(''); // Reset previous link
     try {
       console.log("Fetching POST /api/sessions...");
       const response = await fetch('http://localhost:8080/api/sessions', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableNo }),
       });
       console.log("Response status:", response.status);
       if (!response.ok) {
@@ -202,7 +276,12 @@ export const Moderator_main = () => {
       }
       const data = await response.json();
       console.log("Session created:", data);
-      alert(`Session created! ID: ${data.id}`);
+
+      const link = `${window.location.origin}/index.html?session=${data.id}`;
+      setCreatedLink(link);
+      alert(`Session created for Table ${data.tableNo}! ID: ${data.id}`);
+
+      setTableNo(''); // Reset input
       fetchSessions(); // Refresh list immediately
     } catch (error) {
       console.error('Error creating session:', error);
@@ -212,13 +291,39 @@ export const Moderator_main = () => {
     }
   };
 
+  const deleteSession = async (sessionId: string) => {
+    if (!confirm('Are you sure you want to delete this session?')) return;
+    try {
+      await fetch(`http://localhost:8080/api/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+      fetchSessions();
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      alert('Failed to delete session');
+    }
+  };
+
   return (
     <div className='frontbody'>
       <h1>Moderator Dashboard</h1>
       <div className='foodcontainer' style={{ flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+        <input
+          type="text"
+          placeholder="Enter Table Number"
+          value={tableNo}
+          onChange={(e) => setTableNo(e.target.value)}
+          style={{ padding: '10px', fontSize: '16px', borderRadius: '5px', border: '1px solid #ccc' }}
+        />
         <button className='addtocartbutton' onClick={createSession} disabled={loading}>
           {loading ? 'Creating...' : 'Create New Session'}
         </button>
+        {createdLink && (
+          <div style={{ margin: '10px 0', padding: '10px', backgroundColor: '#e6fffa', border: '1px solid #b2f5ea', borderRadius: '5px', textAlign: 'center' }}>
+            <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', color: '#285e61' }}>Share this link:</p>
+            <a href={createdLink} target="_blank" rel="noopener noreferrer" style={{ color: '#319795', wordBreak: 'break-all' }}>{createdLink}</a>
+          </div>
+        )}
 
         <div style={{ width: '100%', maxWidth: '600px' }}>
           <h2>Active Sessions ({sessions.length})</h2>
@@ -239,6 +344,7 @@ export const Moderator_main = () => {
                 }}>
                   <div>
                     <strong style={{ fontSize: '1.2em' }}>ID: {session.id}</strong>
+                    {session.tableNo && <span style={{ marginLeft: '10px', backgroundColor: '#eee', padding: '2px 6px', borderRadius: '4px' }}>Table {session.tableNo}</span>}
                     <br />
                     <span style={{ fontSize: '0.9em', color: '#666' }}>
                       Created: {new Date(session.createdAt).toLocaleTimeString()}
@@ -246,6 +352,21 @@ export const Moderator_main = () => {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <strong>Users: {session.users ? session.users.length : 0}</strong>
+                    <br />
+                    <button
+                      onClick={() => deleteSession(session.id)}
+                      style={{
+                        marginTop: '5px',
+                        backgroundColor: '#ff4d4d',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '5px 10px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Delete
+                    </button>
                   </div>
                 </li>
               ))}
@@ -317,11 +438,28 @@ export const Checkout_order = ({ name, amount }: { name: string; amount: number 
 };
 
 export const Checkout_main = () => {
+  useEffect(() => {
+    const sessionId = getSessionId();
+    if (!sessionId) {
+      alert("No active session found. Returning to Home.");
+      location.href = 'index.html';
+      return;
+    }
+
+    checkSessionValidity(sessionId).then(isValid => {
+      if (!isValid) {
+        alert("This session has been ended by the moderator.");
+        localStorage.removeItem('currentSessionId');
+        location.href = 'index.html';
+      }
+    });
+  }, []);
+
   const handleConfirmOrder = async () => {
-    const sessionId = localStorage.getItem('currentSessionId');
+    const sessionId = getSessionId();
     if (!sessionId) {
       alert('Please join a session first!');
-      location.href = 'index.html';
+      navigateTo('index.html');
       return;
     }
 
@@ -350,7 +488,7 @@ export const Checkout_main = () => {
         localStorage.removeItem('cart');
         Confirmed_order.clear();
         alert('Order Confirmed sent to Kitchen!');
-        location.href = 'order.html';
+        navigateTo('order.html');
       } else {
         alert('Failed to submit order');
       }
