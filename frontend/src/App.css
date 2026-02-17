@@ -1,6 +1,6 @@
 @font-face {
     font-family: bualoy;
-    src: url(assets/DSBualoyTester.ttf);
+    src: url(assets/k2d.ttf);
 }
 
 :root {
@@ -283,4 +283,23 @@
 .floating-btn:hover {
     transform: scale(1.05);
     background-color: #adff2f;
+}
+
+.confirmbtn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    background-color: green;
+    color: white;
+    border: none;
+    font-weight: bold;
+    transition: 0.3s;
+    margin-left: 20px;
+    text-decoration: none;
+    animation: bounce 1s ease-in-out infinite;
+}
+
+.confirmbtn:hover {
+    background-color: #ff0000;
+    color: black;
 }

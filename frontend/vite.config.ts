@@ -11,4 +11,16 @@ export default defineConfig({
     },
   },
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        order: 'order.html',
+        checkout: 'checkout.html',
+        moderator: 'moderator.html',
+        dashboard: 'dashboard.html',
+        success: 'success.html',
+      },
+    },
+  },
 })
