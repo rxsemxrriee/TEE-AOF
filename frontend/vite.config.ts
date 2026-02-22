@@ -19,7 +19,6 @@ export default defineConfig({
         checkout: 'checkout.html',
         moderator: 'moderator.html',
         dashboard: 'dashboard.html',
-        success: 'success.html',
       },
     },
   },

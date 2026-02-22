@@ -1,8 +1,8 @@
 package buffet
 
 import (
-	"GO-learning-project/backend1/internal/domain/errors"
-	"GO-learning-project/backend1/internal/domain/order"
+	"TEE-AOF/internal/domain/errors"
+	"TEE-AOF/internal/domain/order"
 )
 
 type Rule interface {

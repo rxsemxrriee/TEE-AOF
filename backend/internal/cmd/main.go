@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"GO-learning-project/backend1/internal/application/service"
-	"GO-learning-project/backend1/internal/domain/buffet"
-	"GO-learning-project/backend1/internal/domain/order"
+	"TEE-AOF/internal/application/service"
+	"TEE-AOF/internal/domain/buffet"
+	"TEE-AOF/internal/domain/order"
 )
 
 // ----------------------------

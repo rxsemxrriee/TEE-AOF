@@ -1,4 +1,5 @@
-import './App.css'
+import './App.css';
+import './style.css';
 import { useEffect, useState } from 'react';
 
 //golang connectionโปรดอย่าแตะต้องถ้าไม่จำเป็น
@@ -562,7 +563,7 @@ export const Moderator_main_1 = () => {
   );
 };
 
-export const Dashboard = () => {
+const PendingOrdersView = () => {
   const [orders, setOrders] = useState<any[]>([]);
 
   const fetchOrders = async () => {
@@ -570,15 +571,6 @@ export const Dashboard = () => {
       const response = await fetch('http://localhost:8080/api/orders');
       if (response.ok) {
         const data = await response.json();
-        // Filter out completed orders if needed, or backend can filter.
-        // For now, let's show all that are not 'success' (or show all and let user filter?)
-        // The previous logic filtered out 'success' locally.
-        // Let's filter out 'success' status orders from the main view, OR confirm updates status.
-        // Only show active orders? 
-        // "Success" page shows confirmed orders. Dashboard shows pending?
-        // Let's assume Dashboard shows everything getting worked on.
-        // If status is 'success', maybe don't show it or show as completed.
-        // The previous logic REMOVED the row.
         setOrders(data ? data.filter((o: any) => o.status !== 'success') : []);
       }
     } catch (error) {
@@ -593,7 +585,6 @@ export const Dashboard = () => {
   }, []);
 
   const handleConfirm = async (order: any) => {
-    // 1. Update Backend
     if (order.session_id) {
       try {
         await fetch(`http://localhost:8080/api/sessions/${order.session_id}/orders/${order.order_id}`, {
@@ -606,7 +597,6 @@ export const Dashboard = () => {
       }
     }
 
-    // 2. Update Local Storage for Success Page (Legacy/User View support)
     const successOrders = JSON.parse(localStorage.getItem('success_orders') || '[]');
     const exists = successOrders.some((o: any) => o.order_id === order.order_id);
     if (!exists) {
@@ -615,66 +605,56 @@ export const Dashboard = () => {
       localStorage.setItem('success_orders', JSON.stringify(successOrders));
     }
 
-    // 3. Update Local State (Optimistic update)
     setOrders(prevOrders => prevOrders.filter(o => o.order_id !== order.order_id));
-
-    // Refresh to be sure
     fetchOrders();
   };
 
   return (
-    <>
-      <div className="navbar">
-        <h1>ของที่ต้องจัดเตรียม</h1>
-        <a>จัดเตรียมเรียบร้อย</a>
-      </div>
+    <table>
+      <thead>
+        <tr>
+          <th>orderID</th>
+          <th>โต๊ะ</th>
+          <th>รายการอาหาร</th>
+          <th>จำนวน</th>
+          <th>timestamp</th>
+          <th>สถานะ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {orders.map((order, orderIndex) => {
+          const items = order.items || [];
+          const rowCount = items.length;
+          const isEven = orderIndex % 2 === 0;
+          const rowClass = isEven ? 'bg-even' : 'bg-odd';
 
-      <table>
-        <thead>
-          <tr>
-            <th>orderID</th>
-            <th>โต๊ะ</th>
-            <th>รายการอาหาร</th>
-            <th>จำนวน</th>
-            <th>timestamp</th>
-            <th>สถานะ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => {
-            const items = order.items || [];
-            const rowCount = items.length;
-            const isEven = parseInt(order.order_id || '0') % 2 === 1;
-            const rowClass = isEven ? 'bg-even' : 'bg-odd';
-
-            return items.map((item: any, index: number) => (
-              <tr key={`${order.order_id}-${index}`} className={rowClass}>
-                {index === 0 && (
-                  <>
-                    <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.order_id}</td>
-                    <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.table_no}</td>
-                  </>
-                )}
-                <td>{item.name}</td>
-                <td>{item.qty}</td>
-                {index === 0 && (
-                  <>
-                    <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.timestamp || ''}</td>
-                    <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>
-                      <button className="confirmbtn" onClick={() => handleConfirm(order)}>ยืนยันorder</button>
-                    </td>
-                  </>
-                )}
-              </tr>
-            ));
-          })}
-        </tbody>
-      </table>
-    </>
+          return items.map((item: any, index: number) => (
+            <tr key={`${order.order_id}-${index}`} className={rowClass}>
+              {index === 0 && (
+                <>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.order_id}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.table_no}</td>
+                </>
+              )}
+              <td>{item.name}</td>
+              <td>{item.qty}</td>
+              {index === 0 && (
+                <>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.timestamp || ''}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>
+                    <button className="confirmbtn" onClick={() => handleConfirm(order)}>ยืนยันorder</button>
+                  </td>
+                </>
+              )}
+            </tr>
+          ));
+        })}
+      </tbody>
+    </table>
   );
 };
 
-export const Success = () => {
+const SuccessOrdersView = () => {
   const [successOrders, setSuccessOrders] = useState<any[]>([]);
 
   useEffect(() => {
@@ -695,61 +675,101 @@ export const Success = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>orderID</th>
+          <th>โต๊ะ</th>
+          <th>รายการอาหาร</th>
+          <th>จำนวน</th>
+          <th>timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        {successOrders.map((order, orderIndex) => {
+          const items = order.items || [];
+          const rowCount = items.length;
+          const isEven = orderIndex % 2 === 0;
+          const rowClass = isEven ? 'bg-even' : 'bg-odd';
+
+          return items.map((item: any, index: number) => (
+            <tr key={`${order.order_id}-${index}`} className={rowClass}>
+              {index === 0 && (
+                <>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.order_id}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.table_no}</td>
+                </>
+              )}
+              <td>{item.name}</td>
+              <td>{item.qty}</td>
+              {index === 0 && (
+                <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.timestamp || ''}</td>
+              )}
+            </tr>
+          ));
+        })}
+      </tbody>
+    </table>
+  );
+};
+
+export const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState<'pending' | 'success'>('pending');
+
   const handleClearSession = () => {
     if (confirm('Are you sure you want to clear the session? This will delete all confirmed orders.')) {
       localStorage.removeItem('success_orders');
-      setSuccessOrders([]);
+      window.dispatchEvent(new Event('storage')); // trigger update if needed
       alert('Session cleared!');
     }
   };
 
   return (
     <>
-      <div className="navbar">
-        <h1>ของที่ต้องจัดเตรียม</h1>
-        <button
-          onClick={handleClearSession}
-          style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
-        >
-          Clear Session
-        </button>
+      <div className="navbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px' }}>
+        <h1 style={{ margin: 0 }}>{activeTab === 'pending' ? 'ของที่ต้องจัดเตรียม' : 'ออเดอร์ที่เสร็จสิ้น'}</h1>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <button
+            onClick={() => setActiveTab('pending')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: activeTab === 'pending' ? '#ff6b6b' : '#333',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: activeTab === 'pending' ? 'bold' : 'normal'
+            }}
+          >
+            Pending Orders
+          </button>
+          <button
+            onClick={() => setActiveTab('success')}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: activeTab === 'success' ? '#ff6b6b' : '#333',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: activeTab === 'success' ? 'bold' : 'normal'
+            }}
+          >
+            Success Orders
+          </button>
+          {activeTab === 'success' && (
+            <button
+              onClick={handleClearSession}
+              style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              Clear Session
+            </button>
+          )}
+        </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>orderID</th>
-            <th>โต๊ะ</th>
-            <th>รายการอาหาร</th>
-            <th>จำนวน</th>
-            <th>timestamp</th>
-          </tr>
-        </thead>
-        <tbody>
-          {successOrders.map((order) => {
-            const items = order.items || [];
-            const rowCount = items.length;
-            const isEven = parseInt(order.order_id) % 2 === 1;
-            const rowClass = isEven ? 'bg-even' : 'bg-odd';
-
-            return items.map((item: any, index: number) => (
-              <tr key={`${order.order_id}-${index}`} className={rowClass}>
-                {index === 0 && (
-                  <>
-                    <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.order_id}</td>
-                    <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.table_no}</td>
-                  </>
-                )}
-                <td>{item.name}</td>
-                <td>{item.qty}</td>
-                {index === 0 && (
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.timestamp || ''}</td>
-                )}
-              </tr>
-            ));
-          })}
-        </tbody>
-      </table>
+      {activeTab === 'pending' ? <PendingOrdersView /> : <SuccessOrdersView />}
     </>
   );
 };
