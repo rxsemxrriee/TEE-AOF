@@ -2,6 +2,7 @@ package repository
 
 import (
 	"TEE-AOF/internal/model"
+
 	"gorm.io/gorm"
 )
 
@@ -9,6 +10,7 @@ type OrderRepository interface {
 	WithTransaction(func(tx *gorm.DB) error) error
 	FindAll() ([]model.Order, error)
 	UpdateStatus(orderID uint, status string) error
+	ClearServedOrders() error
 }
 
 type orderRepository struct {
@@ -31,8 +33,8 @@ func (r *orderRepository) FindPendingByTableID(tableId uint) (*model.Order, erro
 	var order model.Order
 
 	err := r.db.
-	Where("table_id = ? AND status = ?", tableId, "pending").
-	First(&order).Error
+		Where("table_id = ? AND status = ?", tableId, "pending").
+		First(&order).Error
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -50,13 +52,17 @@ func (r *orderRepository) WithTransaction(fn func(tx *gorm.DB) error) error {
 
 func (r *orderRepository) FindAll() ([]model.Order, error) {
 	var orders []model.Order
-	err := r.db.Find(&orders).Error
+	err := r.db.Preload("Items").Preload("Items.MenuItem").Preload("Table").Find(&orders).Error
 	return orders, err
 }
 
 func (r *orderRepository) UpdateStatus(orderID uint, status string) error {
-	return r.db. 
+	return r.db.
 		Model(&model.Order{}).
 		Where("id = ?", orderID).
 		Update("status", status).Error
+}
+
+func (r *orderRepository) ClearServedOrders() error {
+	return r.db.Where("status = ?", "served").Delete(&model.Order{}).Error
 }

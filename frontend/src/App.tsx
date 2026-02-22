@@ -44,7 +44,7 @@ const navigateTo = (path: string) => {
 // Helper to check if session is valid
 const checkSessionValidity = async (sessionId: string) => {
   try {
-    const response = await fetch(`http://localhost:8080/api/sessions/${sessionId}`);
+    const response = await fetch(`http://localhost:8080/tables/${sessionId}`);
     return response.ok;
   } catch (error) {
     console.error("Error checking session:", error);
@@ -92,14 +92,38 @@ export const Order = () => {
 }
 //หน้าorder
 export const Order_main = () => {
-  const pork: string[] = ['Sliced pork', 'Minched pork', 'Marinated pork']
-  const beef: string[] = ['Sliced beef', 'Marinated beef']
-  const chicken: string[] = ['Mala chicken']
-  const appetizer: string[] = ['French Fries', 'Nuggets']
-  const foodimg: string[] = ['mhoo.png', 'mhoobod.png', 'mhoomuk.png', 'beefslice.png', 'beefmarinate.png', 'malachicken.png', 'frenchfries.png', 'nuggets.png']
+  const [categories, setCategories] = useState<{ [key: string]: any[] }>({
+    meat: [], fish: [], veg: [], app: [], drink: []
+  });
 
-  const [cartUpdate, setCartUpdate] = useState(0);
+  const [, setCartUpdate] = useState(0);
   const updateCart = () => setCartUpdate(prev => prev + 1);
+
+  // Fetch menu from DB
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/menu');
+        if (response.ok) {
+          const result = await response.json();
+          const items = result.data || [];
+          const grouped: { [key: string]: any[] } = { meat: [], fish: [], veg: [], app: [], drink: [] };
+          items.forEach((item: any) => {
+            if (grouped[item.Category]) {
+              grouped[item.Category].push(item);
+            } else {
+              grouped.other = grouped.other || [];
+              grouped.other.push(item);
+            }
+          });
+          setCategories(grouped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch dynamic menu", err);
+      }
+    };
+    fetchMenu();
+  }, []);
 
   useEffect(() => {
     const sessionId = getSessionId();
@@ -127,35 +151,28 @@ export const Order_main = () => {
 
   return <div className='frontbody'>
     <h1>สั่งอาหาร</h1>
-    <hr />
-    <h2>Pork</h2>
-    <div className='foodcontainer'>
-      {pork.map((item, index) => (
-        <Menulist key={`pork-${index}`} name={item} img={foodimg[index]} onUpdate={updateCart} />
-      ))}
-    </div>
-    <hr />
-    <h2>Beef</h2>
-    <div className='foodcontainer'>
-      {beef.map((item, index) => (
-        <Menulist key={`beef-${index}`} name={item} img={foodimg[index + 3]} onUpdate={updateCart} />
-      ))}
-    </div>
-    <hr />
 
-    <h2>Chicken</h2>
-    <div className='foodcontainer'>
-      {chicken.map((item, index) => (
-        <Menulist key={`chicken-${index}`} name={item} img={foodimg[index + 5]} onUpdate={updateCart} />
-      ))}
-    </div>
-    <hr />
-    <h2>Appetizer</h2>
-    <div className='foodcontainer'>
-      {appetizer.map((item, index) => (
-        <Menulist key={`appetizer-${index}`} name={item} img={foodimg[index + 6]} onUpdate={updateCart} />
-      ))}
-    </div>
+    {Object.keys(categories).map((categoryKey) => {
+      const items = categories[categoryKey];
+      if (!items || items.length === 0) return null;
+
+      const titleMap: { [key: string]: string } = {
+        meat: 'Meat', fish: 'Seafood', veg: 'Vegetables', app: 'Appetizers', drink: 'Drinks', other: 'Other'
+      };
+
+      return (
+        <div key={categoryKey}>
+          <hr />
+          <h2>{titleMap[categoryKey] || categoryKey}</h2>
+          <div className='foodcontainer'>
+            {items.map((item: any) => (
+              <Menulist key={item.ID} id={item.ID} name={item.Name} img="mhoo.png" onUpdate={updateCart} />
+            ))}
+          </div>
+        </div>
+      );
+    })}
+
     {
       Confirmed_order.size > 0 && (
         <div className='floating-btn' onClick={() => navigateTo('checkout.html')}>
@@ -172,29 +189,25 @@ export const Frontpagebodycontent = () => {
 
   const handleJoin = async () => {
     if (!sessionId) {
-      alert('Please enter a session ID');
+      alert('Please enter a session token');
       return;
     }
     try {
-      // For now we just check if it exists or use the join endpoint with a dummy username
-      // In a real app we'd ask for username
-      const username = `User_${Math.floor(Math.random() * 1000)}`;
-      const response = await fetch(`http://localhost:8080/api/sessions/${sessionId}/join`, {
-        method: 'POST',
+      const response = await fetch(`http://localhost:8080/tables/${sessionId}`, {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username }),
       });
 
       if (!response.ok) {
-        throw new Error('Session not found or failed to join');
+        throw new Error('Table session not found or failed to join');
       }
 
-      alert(`Joined session ${sessionId} as ${username}`);
+      alert(`Joined table session with Token ${sessionId}`);
       localStorage.setItem('currentSessionId', sessionId);
       // Redirect with session ID param
       location.href = `order.html?session=${sessionId}`;
     } catch (error) {
-      alert('Failed to join session. Please check the ID.');
+      alert('Failed to join table. Please check the Token.');
       console.error(error);
     }
   };
@@ -216,7 +229,7 @@ export const Frontpagebodycontent = () => {
       <h3>Join a Session</h3>
       <input
         type="text"
-        placeholder="Enter Session ID"
+        placeholder="Enter Table Token"
         value={sessionId}
         onChange={(e) => setSessionId(e.target.value)}
         style={{ padding: '10px', fontSize: '16px', borderRadius: '5px', border: 'none', marginRight: '10px' }}
@@ -240,11 +253,13 @@ export const Moderator_main = () => {
 
   const fetchSessions = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/sessions');
-      const data = await response.json();
-      setSessions(data || []);
+      const response = await fetch('http://localhost:8080/tables');
+      if (response.ok) {
+        const result = await response.json();
+        setSessions(result.data || []);
+      }
     } catch (error) {
-      console.error('Error fetching sessions:', error);
+      console.error('Error fetching tables:', error);
     }
   };
 
@@ -257,7 +272,6 @@ export const Moderator_main = () => {
   const [createdLink, setCreatedLink] = useState('');
 
   const createSession = async () => {
-    console.log("createSession called");
     if (!tableNo) {
       alert("Please enter a table number");
       return;
@@ -265,43 +279,45 @@ export const Moderator_main = () => {
     setLoading(true);
     setCreatedLink(''); // Reset previous link
     try {
-      console.log("Fetching POST /api/sessions...");
-      const response = await fetch('http://localhost:8080/api/sessions', {
+      const response = await fetch('http://localhost:8080/tables', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableNo }),
       });
-      console.log("Response status:", response.status);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
-      console.log("Session created:", data);
+      const result = await response.json();
+      const newTable = result.data;
 
-      const link = `${window.location.origin}/index.html?session=${data.id}`;
+      const link = `${window.location.origin}/index.html?session=${newTable.Token}`;
       setCreatedLink(link);
-      alert(`Session created for Table ${data.tableNo}! ID: ${data.id}`);
+      alert(`Session created for Table ${newTable.Number}!\nToken: ${newTable.Token}`);
 
       setTableNo(''); // Reset input
       fetchSessions(); // Refresh list immediately
     } catch (error) {
-      console.error('Error creating session:', error);
-      alert(`Failed to create session: ${error}`);
+      console.error('Error creating table session:', error);
+      alert(`Failed to create table session: ${error}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const deleteSession = async (sessionId: string) => {
-    if (!confirm('Are you sure you want to delete this session?')) return;
-    try {
-      await fetch(`http://localhost:8080/api/sessions/${sessionId}`, {
-        method: 'DELETE',
-      });
-      fetchSessions();
-    } catch (error) {
-      console.error('Error deleting session:', error);
-      alert('Failed to delete session');
+  const deleteSession = async (sessionId: number) => {
+    if (confirm("Are you sure you want to delete this table?")) {
+      try {
+        const response = await fetch(`http://localhost:8080/tables/${sessionId}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          fetchSessions();
+        } else {
+          alert("Failed to delete table");
+        }
+      } catch (error) {
+        console.error("Error deleting table:", error);
+      }
     }
   };
 
@@ -317,7 +333,7 @@ export const Moderator_main = () => {
           style={{ padding: '10px', fontSize: '16px', borderRadius: '5px', border: '1px solid #ccc' }}
         />
         <button className='addtocartbutton' onClick={createSession} disabled={loading}>
-          {loading ? 'Creating...' : 'Create New Session'}
+          {loading ? 'Creating...' : 'Create New Table Session'}
         </button>
         {createdLink && (
           <div style={{ margin: '10px 0', padding: '10px', backgroundColor: '#e6fffa', border: '1px solid #b2f5ea', borderRadius: '5px', textAlign: 'center' }}>
@@ -327,13 +343,13 @@ export const Moderator_main = () => {
         )}
 
         <div style={{ width: '100%', maxWidth: '600px' }}>
-          <h2>Active Sessions ({sessions.length})</h2>
+          <h2>Active Tables ({sessions.length})</h2>
           {sessions.length === 0 ? (
-            <p>No active sessions.</p>
+            <p>No active tables.</p>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0 }}>
               {sessions.map((session) => (
-                <li key={session.id} style={{
+                <li key={session.ID} style={{
                   backgroundColor: 'white',
                   color: 'black',
                   margin: '10px 0',
@@ -343,19 +359,19 @@ export const Moderator_main = () => {
                   justifyContent: 'space-between',
                   alignItems: 'center'
                 }}>
-                  <div>
-                    <strong style={{ fontSize: '1.2em' }}>ID: {session.id}</strong>
-                    {session.tableNo && <span style={{ marginLeft: '10px', backgroundColor: '#eee', padding: '2px 6px', borderRadius: '4px' }}>Table {session.tableNo}</span>}
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ fontSize: '1.2em' }}>Table {session.Number}</strong>
+                    <span style={{ marginLeft: '10px', backgroundColor: '#eee', padding: '2px 6px', borderRadius: '4px' }}>Token: {session.Token}</span>
                     <br />
                     <span style={{ fontSize: '0.9em', color: '#666' }}>
-                      Created: {new Date(session.createdAt).toLocaleTimeString()}
+                      Created: {new Date(session.CreateAt).toLocaleTimeString()}
                     </span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <strong>Users: {session.users ? session.users.length : 0}</strong>
+                    <strong>Status: {session.Status}</strong>
                     <br />
                     <button
-                      onClick={() => deleteSession(session.id)}
+                      onClick={() => deleteSession(session.ID)}
                       style={{
                         marginTop: '5px',
                         backgroundColor: '#ff4d4d',
@@ -378,7 +394,7 @@ export const Moderator_main = () => {
     </div>
   );
 };
-export const Menulist = ({ name, img, onUpdate }: { name: string; img?: string; onUpdate?: () => void }) => {
+export const Menulist = ({ id, name, img, onUpdate }: { id: number; name: string; img?: string; onUpdate?: () => void }) => {
   const [popupstate, setpopupstate] = useState(false)
   const [itemamount, setitemamount] = useState(0)
 
@@ -387,7 +403,7 @@ export const Menulist = ({ name, img, onUpdate }: { name: string; img?: string; 
       alert("Please change the amount")
     }
     else {
-      Confirmed_order.set(name, itemamount);
+      Confirmed_order.set(id, { name, qty: itemamount });
       localStorage.setItem('cart', JSON.stringify(Array.from(Confirmed_order.entries())));
       setpopupstate(false)
       setitemamount(0)
@@ -427,7 +443,8 @@ export const Footer = () => {
 }
 
 const savedCart = localStorage.getItem('cart');
-let Confirmed_order = new Map<string, number>(savedCart ? JSON.parse(savedCart) : []);
+let Confirmed_order = new Map<number, { name: string, qty: number }>(savedCart ? JSON.parse(savedCart) : []);
+
 export const Checkout_order = ({ name, amount }: { name: string; amount: number }) => {
   return (
     <div className='menuselect'>
@@ -464,20 +481,15 @@ export const Checkout_main = () => {
       return;
     }
 
-    const items = Array.from(Confirmed_order).map(([name, qty]) => ({ name, qty }));
-    // In a real app, table_no might come from session or user input
-    // For now we'll mock it or use the username if available
-    const table_no = "Table " + (Math.floor(Math.random() * 10) + 1);
+    const items = Array.from(Confirmed_order).map(([id, data]) => ({ menu_item_id: id, quantity: data.qty }));
 
     const orderData = {
-      table_no: table_no,
+      token: sessionId,
       items: items,
-      timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
-      status: "pending"
     };
 
     try {
-      const response = await fetch(`http://localhost:8080/api/sessions/${sessionId}/orders`, {
+      const response = await fetch(`http://localhost:8080/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -504,9 +516,9 @@ export const Checkout_main = () => {
       <h1>ยืนยันorder</h1>
       <div className='foodcontainer'>
         <ul>
-          {Array.from(Confirmed_order).map(([food, amount], index) => (
-            <li key={index}>
-              <Checkout_order name={food} amount={amount} />
+          {Array.from(Confirmed_order).map(([id, data]) => (
+            <li key={id}>
+              <Checkout_order name={data.name} amount={data.qty} />
             </li>
           ))}
         </ul>
@@ -568,10 +580,11 @@ const PendingOrdersView = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/orders');
+      const response = await fetch('http://localhost:8080/orders');
       if (response.ok) {
-        const data = await response.json();
-        setOrders(data ? data.filter((o: any) => o.status !== 'success') : []);
+        const result = await response.json();
+        // Assuming backend returns Order objects with {ID, TableID, Status, CreateAt, Items: []}
+        setOrders(result.data ? result.data.filter((o: any) => o.Status !== 'served') : []);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -585,27 +598,21 @@ const PendingOrdersView = () => {
   }, []);
 
   const handleConfirm = async (order: any) => {
-    if (order.session_id) {
-      try {
-        await fetch(`http://localhost:8080/api/sessions/${order.session_id}/orders/${order.order_id}`, {
-          method: 'PUT',
+    try {
+      if (order.ID) {
+        await fetch(`http://localhost:8080/orders/${order.ID}`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'success' })
+          body: JSON.stringify({ status: 'served' })
         });
-      } catch (e) {
-        console.error("Failed to update backend status", e);
       }
+    } catch (e) {
+      console.error("Failed to update backend status", e);
     }
 
-    const successOrders = JSON.parse(localStorage.getItem('success_orders') || '[]');
-    const exists = successOrders.some((o: any) => o.order_id === order.order_id);
-    if (!exists) {
-      const updatedOrder = { ...order, status: 'success' };
-      successOrders.push(updatedOrder);
-      localStorage.setItem('success_orders', JSON.stringify(successOrders));
-    }
-
-    setOrders(prevOrders => prevOrders.filter(o => o.order_id !== order.order_id));
+    setOrders(prevOrders => prevOrders.filter(o => o.ID !== order.ID));
+    // Trigger storage event so Success tab updates if it's open (though they share local fetch now)
+    window.dispatchEvent(new Event('storage'));
     fetchOrders();
   };
 
@@ -623,24 +630,39 @@ const PendingOrdersView = () => {
       </thead>
       <tbody>
         {orders.map((order, orderIndex) => {
-          const items = order.items || [];
-          const rowCount = items.length;
+          const items = order.Items || [];
+          const rowCount = items.length === 0 ? 1 : items.length;
           const isEven = orderIndex % 2 === 0;
           const rowClass = isEven ? 'bg-even' : 'bg-odd';
 
+          if (items.length === 0) {
+            return (
+              <tr key={`${order.ID}-noitems`} className={rowClass}>
+                <td>{order.ID}</td>
+                <td>{order.Table?.Number ?? order.TableID}</td>
+                <td colSpan={2} style={{ color: '#999' }}>No items</td>
+                <td>{new Date(order.CreateAt).toLocaleTimeString()}</td>
+                <td>
+                  <button className="confirmbtn" onClick={() => handleConfirm(order)}>ยืนยันorder</button>
+                </td>
+              </tr>
+            );
+          }
+
           return items.map((item: any, index: number) => (
-            <tr key={`${order.order_id}-${index}`} className={rowClass}>
+            <tr key={`${order.ID}-${index}`} className={rowClass}>
               {index === 0 && (
                 <>
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.order_id}</td>
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.table_no}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.ID}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.Table?.Number ?? order.TableID}</td>
                 </>
               )}
-              <td>{item.name}</td>
-              <td>{item.qty}</td>
+              {/* Assuming MenuItemID is mapped to item's name somehow, or needs adjusting. We just show ID if name is missing */}
+              <td>{item.MenuItem?.Name ?? `Item #${item.MenuItemID}`}</td>
+              <td>{item.Quantity}</td>
               {index === 0 && (
                 <>
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.timestamp || ''}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{new Date(order.CreateAt).toLocaleTimeString()}</td>
                   <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>
                     <button className="confirmbtn" onClick={() => handleConfirm(order)}>ยืนยันorder</button>
                   </td>
@@ -657,22 +679,32 @@ const PendingOrdersView = () => {
 const SuccessOrdersView = () => {
   const [successOrders, setSuccessOrders] = useState<any[]>([]);
 
-  useEffect(() => {
-    const loadOrders = () => {
-      const storedOrders = JSON.parse(localStorage.getItem('success_orders') || '[]');
-      setSuccessOrders(storedOrders);
-    };
-
-    loadOrders(); // Load initially
-
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'success_orders') {
-        loadOrders();
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/orders');
+      if (response.ok) {
+        const result = await response.json();
+        setSuccessOrders(result.data ? result.data.filter((o: any) => o.Status === 'served') : []);
       }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders(); // Load initially
+
+    const handleStorageChange = () => {
+      fetchOrders();
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    const interval = setInterval(fetchOrders, 5000); // 5s polling for success
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    }
   }, []);
 
   return (
@@ -688,23 +720,34 @@ const SuccessOrdersView = () => {
       </thead>
       <tbody>
         {successOrders.map((order, orderIndex) => {
-          const items = order.items || [];
-          const rowCount = items.length;
+          const items = order.Items || [];
+          const rowCount = items.length === 0 ? 1 : items.length;
           const isEven = orderIndex % 2 === 0;
           const rowClass = isEven ? 'bg-even' : 'bg-odd';
 
+          if (items.length === 0) {
+            return (
+              <tr key={`${order.ID}-noitems`} className={rowClass}>
+                <td>{order.ID}</td>
+                <td>{order.Table?.Number ?? order.TableID}</td>
+                <td colSpan={2} style={{ color: '#999' }}>No items</td>
+                <td>{new Date(order.CreateAt).toLocaleTimeString()}</td>
+              </tr>
+            );
+          }
+
           return items.map((item: any, index: number) => (
-            <tr key={`${order.order_id}-${index}`} className={rowClass}>
+            <tr key={`${order.ID}-${index}`} className={rowClass}>
               {index === 0 && (
                 <>
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.order_id}</td>
-                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.table_no}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.ID}</td>
+                  <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.Table?.Number ?? order.TableID}</td>
                 </>
               )}
-              <td>{item.name}</td>
-              <td>{item.qty}</td>
+              <td>{item.MenuItem?.Name ?? `Item #${item.MenuItemID}`}</td>
+              <td>{item.Quantity}</td>
               {index === 0 && (
-                <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{order.timestamp || ''}</td>
+                <td rowSpan={rowCount} style={{ verticalAlign: 'top' }}>{new Date(order.CreateAt).toLocaleTimeString()}</td>
               )}
             </tr>
           ));
@@ -717,11 +760,22 @@ const SuccessOrdersView = () => {
 export const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<'pending' | 'success'>('pending');
 
-  const handleClearSession = () => {
+  const handleClearSession = async () => {
     if (confirm('Are you sure you want to clear the session? This will delete all confirmed orders.')) {
-      localStorage.removeItem('success_orders');
-      window.dispatchEvent(new Event('storage')); // trigger update if needed
-      alert('Session cleared!');
+      try {
+        const response = await fetch('http://localhost:8080/orders/served', {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          localStorage.removeItem('success_orders');
+          window.dispatchEvent(new Event('storage')); // trigger update if needed
+          alert('Session cleared!');
+        } else {
+          alert('Failed to clear orders');
+        }
+      } catch (error) {
+        console.error('Error clearing orders:', error);
+      }
     }
   };
 

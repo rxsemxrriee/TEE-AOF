@@ -64,8 +64,9 @@ func (s *OrderService) CreateOrder(
 		}
 
 		order := model.Order{
-			TableID: tableID,
-			Status:  "pending",
+			TableID:  tableID,
+			Status:   "pending",
+			CreateAt: time.Now(),
 		}
 
 		if err := tx.Create(&order).Error; err != nil {
@@ -100,4 +101,8 @@ func (s *OrderService) UpdateOrderStatus(orderID uint, status string) error {
 		return fmt.Errorf("invalid status")
 	}
 	return s.repo.UpdateStatus(orderID, status)
+}
+
+func (s *OrderService) ClearServedOrders() error {
+	return s.repo.ClearServedOrders()
 }

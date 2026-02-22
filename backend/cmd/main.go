@@ -247,6 +247,46 @@ func main() {
 		&model.Table{},
 	)
 
+	// --- SEEDER ---
+	var menuCount int64
+	db.Model(&model.MenuItem{}).Count(&menuCount)
+	if menuCount == 0 {
+		defaultMenu := []model.MenuItem{
+			{Name: "Sliced Pork", Category: "meat", Available: true},
+			{Name: "Bacon", Category: "meat", Available: true},
+			{Name: "Pork Liver", Category: "meat", Available: true},
+			{Name: "Beef", Category: "meat", Available: true},
+			{Name: "Dory Fish", Category: "fish", Available: true},
+			{Name: "Salmon", Category: "fish", Available: true},
+			{Name: "Jellyfish", Category: "fish", Available: true},
+			{Name: "Squid", Category: "fish", Available: true},
+			{Name: "Shrimp", Category: "fish", Available: true},
+			{Name: "Morning Glory", Category: "veg", Available: true},
+			{Name: "Cabbage", Category: "veg", Available: true},
+			{Name: "Carrot", Category: "veg", Available: true},
+			{Name: "Golden Needle Mushroom", Category: "veg", Available: true},
+			{Name: "White Shimeji", Category: "veg", Available: true},
+			{Name: "King Oyster Mushroom", Category: "veg", Available: true},
+			{Name: "Snow Fungus", Category: "veg", Available: true},
+			{Name: "Cheese", Category: "app", Available: true},
+			{Name: "Pork Bounce", Category: "app", Available: true},
+			{Name: "Fried Pork", Category: "app", Available: true},
+			{Name: "Fried Chicken", Category: "app", Available: true},
+			{Name: "Nugget", Category: "app", Available: true},
+			{Name: "Water", Category: "drink", Available: true},
+			{Name: "Pepsi", Category: "drink", Available: true},
+			{Name: "Pandan", Category: "drink", Available: true},
+			{Name: "Roselle", Category: "drink", Available: true},
+			{Name: "Chrysanthemum", Category: "drink", Available: true},
+		}
+		for _, m := range defaultMenu {
+			m.CreateAt = time.Now()
+			db.Create(&m)
+		}
+		log.Println("Seeded default menu items.")
+	}
+	// --------------
+
 	tableRepo := repository.NewTableRepository(db)
 	tableService := service.NewTableService(tableRepo)
 	tableHandler := handler.NewTableHandler(tableService)
@@ -289,8 +329,12 @@ func main() {
 	r.GET("/menu", menuHandler.GetMenu)
 	r.POST("/orders", orderHandler.CreateOrder)
 	r.GET("/orders", orderHandler.GetOrders)
+	r.DELETE("/orders/served", orderHandler.ClearServedOrders)
 	r.PATCH("/orders/:id", orderHandler.UpdateStatus)
+	r.GET("/tables", tableHandler.GetTables)
+	r.POST("/tables", tableHandler.CreateTable)
 	r.GET("/tables/:token", tableHandler.GetByToken)
+	r.DELETE("/tables/:id", tableHandler.DeleteTable)
 
 	// Expose via ngrok
 	go func() {
