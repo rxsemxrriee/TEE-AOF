@@ -39,7 +39,7 @@ npm run dev
 ```
 Frontend: React.tsx
 Backend: Golang
-Database: MySQL
+Database: sqlite
 Realtime: Websockets
 ```
 
